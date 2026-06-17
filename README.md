@@ -10,7 +10,7 @@ A REST API for managing a personal movie watchlist. Add movies by title or IMDb 
 
 ## Requirements
 
-- PHP 8.3+
+- PHP 8.4+
 - Composer
 - MySQL
 - An OMDb API key — register for free at [omdbapi.com/apikey.aspx](https://www.omdbapi.com/apikey.aspx). The free tier gives you 1,000 requests/day which is plenty for development.
