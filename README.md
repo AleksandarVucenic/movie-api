@@ -1,58 +1,178 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Movie Watchlist API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A REST API for managing a personal movie watchlist. Add movies by title or IMDb ID, track your watch status, leave ratings and notes, and filter your list however you like. Movie data is fetched from the OMDb API and stored locally so repeat lookups don't hit the external service.
 
-## About Laravel
+## Tech stack
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Laravel 11** with MySQL
+- **Laravel Sanctum** for authentication
+- **OMDb API** for movie data
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Requirements
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- PHP 8.3+
+- Composer
+- MySQL
+- An OMDb API key — register for free at [omdbapi.com/apikey.aspx](https://www.omdbapi.com/apikey.aspx). The free tier gives you 1,000 requests/day which is plenty for development.
 
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Getting started
 
 ```bash
-composer require laravel/boost --dev
+git clone https://github.com/AleksandarVucenic/movie-api.git
+cd movie-api
 
-php artisan boost:install
+composer install
+
+cp .env.example .env
+php artisan key:generate
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Edit `.env` with your database credentials and OMDb key:
 
-## Contributing
+```env
+DB_DATABASE=movie_api
+DB_USERNAME=root
+DB_PASSWORD=
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+OMDB_API_KEY=your_key_here
+```
 
-## Code of Conduct
+```bash
+php artisan migrate
+php artisan serve
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+The API runs at `http://localhost:8000`.
 
-## Security Vulnerabilities
+## Running tests
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+php artisan test
+```
 
-## License
+---
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## API reference
+
+All watchlist endpoints require a `Bearer` token in the `Authorization` header.
+
+### Auth
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/register` | Create an account |
+| `POST` | `/api/login` | Log in, receive a token |
+| `GET` | `/api/me` | Get the authenticated user |
+| `POST` | `/api/logout` | Revoke the current token |
+
+**Register body:**
+```json
+{
+  "name": "James Kirk",
+  "email": "james.kirk@starfleet.com",
+  "password": "password123",
+  "password_confirmation": "password123"
+}
+```
+
+**Login body:**
+```json
+{
+  "email": "james.kirk@starfleet.com",
+  "password": "password123"
+}
+```
+
+Login returns a token you'll use on all subsequent requests:
+```json
+{
+  "data": {
+    "user": { "id": 1, "name": "James Kirk", "email": "james.kirk@starfleet.com" },
+    "token": "1|abc123..."
+  }
+}
+```
+
+---
+
+### Watchlist
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/watchlist` | List your watchlist (paginated) |
+| `POST` | `/api/watchlist` | Add a movie |
+| `GET` | `/api/watchlist/{id}` | Get a single item |
+| `PATCH` | `/api/watchlist/{id}` | Update status, rating, or notes |
+| `DELETE` | `/api/watchlist/{id}` | Remove from watchlist |
+
+**Add a movie** — provide either `imdb_id` or `title`:
+```json
+{ "imdb_id": "tt1375666" }
+```
+```json
+{ "title": "Inception" }
+```
+
+**Update an item** — all fields optional:
+```json
+{
+  "status": "watched",
+  "rating": 9,
+  "notes": "One of my all-time favourites."
+}
+```
+
+Status values: `to_watch` · `watching` · `watched`
+
+**Filtering and pagination:**
+```
+GET /api/watchlist?status=watched
+GET /api/watchlist?search=inception
+GET /api/watchlist?status=to_watch&search=nolan&per_page=5
+```
+
+---
+
+## Postman collection
+
+Import `Movie-Api.postman_collection.json` from the repo root. The login request automatically saves your token to a global variable (`current_token`) so all other requests are authenticated without any copy-pasting.
+
+Quick start:
+1. Import the collection
+2. **Register** to create an account
+3. **Login** — token is saved automatically
+4. Use the watchlist endpoints
+
+---
+
+## Decisions and trade-offs
+
+### Why Sanctum
+
+Sanctum's token-based auth is the right fit for a stateless API like this. It's built into Laravel, has no external dependencies, and issues opaque tokens that are straightforward to revoke per-session. JWT would add complexity (refresh token logic, signing keys) without real benefit here. Session-based auth is for browser clients.
+
+### Why OMDb
+
+Simple HTTP API, free key, and it returns everything needed (title, year, genre, director, runtime, rating, poster) in one call with no pagination or auth complexity.
+
+### Movie deduplication via repository
+
+When a user adds a movie, we do a `firstOrCreate` on the `movies` table keyed by `imdb_id`. This means if two users add the same film, we store one movie record and two watchlist entries pointing to it. This is the right data model — movie metadata is shared, user-specific data (status, rating, notes) lives on the watchlist row.
+
+### Interface for the movie API provider
+
+`MovieApiProvidersInterface` means swapping OMDb for TMDB is a one-line change in the service container — the service layer never touches HTTP directly. This also makes testing clean: mock the interface, no HTTP calls in tests.
+
+### Service layer
+
+Business logic (fetching from OMDb, deduplicating the movie, creating the watchlist entry) lives in `WatchlistService`, not the controller. Controllers handle HTTP in and out; services handle what actually happens. Easy to test, easy to extend.
+
+### Authorization via policies
+
+Ownership checks (`user_id === auth user`) live in `WatchlistPolicy`, not scattered across controller methods. This keeps the authorization logic in one place and makes it easy to extend (e.g. admin roles later).
+
+### What I skipped
+
+**Soft deletes** — users removing an item from their watchlist is a deliberate action. There's no recovery flow needed here, so hard deletes keep things simple.
+
+**Exhaustive validation tests** — the tests cover the business logic (conflict handling, authorization, 404s, the happy path) rather than testing every validation rule. The form requests are straightforward; testing that Laravel rejects a missing field isn't valuable.
