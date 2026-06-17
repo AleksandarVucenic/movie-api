@@ -31,7 +31,7 @@ class WatchlistController extends Controller
         return WatchlistResource::collection($items);
     }
 
-    public function store(StoreWatchlistRequest $request)
+    public function store(StoreWatchlistRequest $request): JsonResponse
     {
         try {
             $item = $this->watchlist->addMovie(

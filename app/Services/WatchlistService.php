@@ -24,6 +24,7 @@ class WatchlistService
     {
         return $user
             ->watchlist()
+            ->with('movie')
             ->filter($queryFilter)
             ->paginate($perPage);
     }
