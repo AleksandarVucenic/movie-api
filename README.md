@@ -4,7 +4,7 @@ A REST API for managing a personal movie watchlist. Add movies by title or IMDb 
 
 ## Tech stack
 
-- **Laravel 11** with MySQL
+- **Laravel 13** with MySQL
 - **Laravel Sanctum** for authentication
 - **OMDb API** for movie data
 
