@@ -73,4 +73,21 @@ class AuthTest extends TestCase
     {
         $this->getJson('/api/watchlist')->assertUnauthorized();
     }
+
+    public function test_auth_endpoints_are_rate_limited(): void
+    {
+        $user = User::factory()->create();
+
+        for ($i = 0; $i < 10; $i++) {
+            $this->postJson('/api/login', [
+                'email'    => $user->email,
+                'password' => 'wrong-password',
+            ]);
+        }
+
+        $this->postJson('/api/login', [
+            'email'    => $user->email,
+            'password' => 'wrong-password',
+        ])->assertStatus(429);
+    }
 }

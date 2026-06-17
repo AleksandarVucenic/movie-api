@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace Tests\Feature\Watchlist;
 
 use App\Enums\Watchlist\WatchlistStatus;
+use App\Exceptions\MovieApiException;
+use App\Exceptions\MovieNotFoundException;
 use App\Models\Movie;
 use App\Models\User;
-use App\Exceptions\MovieNotFoundException;
 use App\Models\Watchlist;
 use App\Services\MovieApiProviders\MovieApiProvidersInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -112,6 +113,22 @@ class WatchlistTest extends TestCase
         $this->actingAs($user)
             ->postJson('/api/watchlist', ['imdb_id' => 'tt9999999'])
             ->assertNotFound();
+    }
+
+    public function test_returns_503_when_movie_api_is_unavailable(): void
+    {
+        $user = User::factory()->create();
+
+        $this->mock(MovieApiProvidersInterface::class, function (MockInterface $mock) {
+            $mock->shouldReceive('findByImdbId')
+                ->once()
+                ->andThrow(new MovieApiException('Movie service is unavailable. Please try again later.'));
+        });
+
+        $this->actingAs($user)
+            ->postJson('/api/watchlist', ['imdb_id' => 'tt1375666'])
+            ->assertStatus(503)
+            ->assertJsonPath('message', 'Movie service is unavailable. Please try again later.');
     }
 
     public function test_store_requires_imdb_id_or_title(): void
