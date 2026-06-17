@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\MovieApiException;
 use App\Exceptions\MovieNotFoundException;
 use App\Filters\WatchlistFilter;
 use App\Http\Requests\Watchlist\StoreWatchlistRequest;
@@ -40,6 +41,8 @@ class WatchlistController extends Controller
             );
         } catch (MovieNotFoundException $e) {
             return response()->json(['message' => $e->getMessage()], 404);
+        } catch (MovieApiException $e) {
+            return response()->json(['message' => $e->getMessage()], 503);
         } catch (UniqueConstraintViolationException) {
             return response()->json(['message' => 'This movie is already in your watchlist.'], 409);
         }
